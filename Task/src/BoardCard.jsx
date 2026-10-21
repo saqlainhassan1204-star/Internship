@@ -1,4 +1,5 @@
 import { useState } from "react";
+import "./App.css";
 
 function BoardCard({ board, onAdd, onDelete, onToggle, onEdit }) {
   const { id, title, grade, teacher, color = "#4f46e5", tasks = [] } = board;

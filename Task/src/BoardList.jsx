@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import BoardCard from "./BoardCard";
+import "./App.css";
 
 const INITIAL_BOARDS = [
   {
