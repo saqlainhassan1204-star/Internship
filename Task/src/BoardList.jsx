@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+
+import { useState, useRef, useEffect } from "react";
 import BoardCard from "./BoardCard";
 import "./App.css";
 
@@ -39,55 +40,150 @@ const INITIAL_BOARDS = [
 ];
 
 function BoardList() {
-  const [boards, setBoards] = useState(INITIAL_BOARDS);
-  const nextId = useRef(1000); // unique ids for new tasks
+  const [boards, setBoards] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const nextId = useRef(1000);
 
-  // Helper: apply a change to the tasks of one board only
+  // Fetch boards from Node.js backend
+  useEffect(() => {
+    async function fetchBoards() {
+      try {
+        const response = await fetch(
+          "http://localhost:5000/api/boards"
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to load boards");
+        }
+
+        const data = await response.json();
+
+        // Backend data ko frontend board format mein convert karein
+        const formattedBoards = data.map((item) => {
+          const existingBoard = INITIAL_BOARDS.find(
+            (board) =>
+              board.id === item.id ||
+              board.title === item.name
+          );
+
+          if (existingBoard) {
+            return { ...existingBoard, id: item.id };
+          }
+
+          return {
+            id: item.id,
+            title: item.name,
+            grade: "Grade not assigned",
+            teacher: "School Teacher",
+            color: "#4f46e5",
+            tasks: [],
+          };
+        });
+
+        setBoards(formattedBoards);
+        setError("");
+      } catch (err) {
+        console.error("Error fetching boards:", err);
+        setError(
+          "Boards load nahi ho sake. Backend check karein."
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchBoards();
+  }, []);
+
   const updateBoardTasks = (boardId, fn) =>
     setBoards((prev) =>
-      prev.map((b) => (b.id === boardId ? { ...b, tasks: fn(b.tasks) } : b))
+      prev.map((board) =>
+        board.id === boardId
+          ? { ...board, tasks: fn(board.tasks) }
+          : board
+      )
     );
 
-  // ADD
   const addTask = (boardId, text) => {
     const clean = text.trim();
     if (!clean) return false;
+
     const id = nextId.current++;
-    updateBoardTasks(boardId, (tasks) => [...tasks, { id, text: clean, done: false }]);
+
+    updateBoardTasks(boardId, (tasks) => [
+      ...tasks,
+      { id, text: clean, done: false },
+    ]);
+
     return true;
   };
 
-  // DELETE
   const deleteTask = (boardId, taskId) =>
-    updateBoardTasks(boardId, (tasks) => tasks.filter((t) => t.id !== taskId));
-
-  // UPDATE (mark done / not done)
-  const toggleTask = (boardId, taskId) =>
     updateBoardTasks(boardId, (tasks) =>
-      tasks.map((t) => (t.id === taskId ? { ...t, done: !t.done } : t))
+      tasks.filter((task) => task.id !== taskId)
     );
 
-  // UPDATE (edit text)
+  const toggleTask = (boardId, taskId) =>
+    updateBoardTasks(boardId, (tasks) =>
+      tasks.map((task) =>
+        task.id === taskId
+          ? { ...task, done: !task.done }
+          : task
+      )
+    );
+
   const editTask = (boardId, taskId, text) => {
     const clean = text.trim();
     if (!clean) return false;
+
     updateBoardTasks(boardId, (tasks) =>
-      tasks.map((t) => (t.id === taskId ? { ...t, text: clean } : t))
+      tasks.map((task) =>
+        task.id === taskId
+          ? { ...task, text: clean }
+          : task
+      )
     );
+
     return true;
   };
 
-  const totalTasks = boards.reduce((n, b) => n + b.tasks.length, 0);
-  const doneTasks = boards.reduce((n, b) => n + b.tasks.filter((t) => t.done).length, 0);
+  if (loading) return <p>Loading boards...</p>;
 
-  if (boards.length === 0) return <p className="empty">No boards yet.</p>;
+  if (error) return <p className="error">{error}</p>;
+
+  const totalTasks = boards.reduce(
+    (total, board) => total + board.tasks.length,
+    0
+  );
+
+  const doneTasks = boards.reduce(
+    (total, board) =>
+      total + board.tasks.filter((task) => task.done).length,
+    0
+  );
+
+  if (boards.length === 0) {
+    return <p className="empty">No boards yet.</p>;
+  }
 
   return (
     <section className="board-list">
       <div className="summary">
-        <div className="stat"><strong>{boards.length}</strong><span>Boards</span></div>
-        <div className="stat"><strong>{totalTasks}</strong><span>Tasks</span></div>
-        <div className="stat"><strong>{doneTasks}</strong><span>Completed</span></div>
+        <div className="stat">
+          <strong>{boards.length}</strong>
+          <span>Boards</span>
+        </div>
+
+        <div className="stat">
+          <strong>{totalTasks}</strong>
+          <span>Tasks</span>
+        </div>
+
+        <div className="stat">
+          <strong>{doneTasks}</strong>
+          <span>Completed</span>
+        </div>
       </div>
 
       <div className="board-grid">

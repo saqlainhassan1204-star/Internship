@@ -182,3 +182,38 @@
     border-right-color: var(--border);
   }
 }
+
+.add-board {
+  margin: 20px 0;
+  padding: 20px;
+  background: white;
+  border-radius: 10px;
+}
+
+.add-board form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.add-board input {
+  flex: 1;
+  min-width: 200px;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.add-board button {
+  padding: 12px 20px;
+  background: #087f5b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.error {
+  color: red;
+  margin-top: 10px;
+}
